@@ -87,7 +87,6 @@ def check_game(b: list) -> bool:
             is_over = True
     if (b[0][0] == b[1][1] == b[2][2] and b[0][0] != 0 or b[2][0] == b[1][1] == b[0][2] and b[2][0] != 0):
         is_over = True
-        ('here 2')
     return is_over
 
 
@@ -163,7 +162,36 @@ def iterat():
     if(not dec):res=random.choice(av)
     print('res',res)
     return str(res)
-
+count=0
+def minimax(b,p=1):
+    global count
+    count+=1
+    best_move=''
+    av=get_avail_indexces(b)
+    over=check_game(b)
+    if (av.__len__() == 0 or over):
+        if (p == 1 and over):
+           return [-1,'']
+        elif(p == 2 and over):
+            return [1,'']
+        else:
+            return [0,'']
+    if p==1:
+        best_value=-100
+    else:
+        best_value=100
+    for i in av:
+        board = copy.deepcopy(b)
+        c=transform(str(i))
+        board[c[0]][c[1]] = 1 if p == 1 else 2
+        hv=minimax(board, 2 if p == 1 else 1)[0]
+        if p==1 and hv>best_value:
+            best_value=hv
+            best_move=i
+        if p==2 and hv<best_value:
+            best_value=hv
+            best_move=i
+    return [best_value,best_move]
 
 
 def make_move(p, c):
@@ -176,20 +204,21 @@ def make_move(p, c):
 best_reward=-10000
 best_weights=None
 def game_start():
-    global board, move_num,p1,p2,best_reward,best_weights,noise_scale
+    global board, move_num,p1,p2,best_reward,best_weights,noise_scale,count
     game_over = False
-    weight = t.rand([9, 8], dtype=t.double)+noise_scale*t.rand([9,8])
+    #weight = t.rand([9, 8], dtype=t.double)+noise_scale*t.rand([9,8])
     while (not game_over and move_num < 9):
         if(move_num%2==0):
-            g=random_move()
+            v,g=minimax(board,1)
         else:
             # g=max_random_search (best_weights if(best_weights!=None) else weight,p2)
             # g=random_move()
-              g=iterat()
-
-        make_move(move_num % 2, transform(g))
-        # print_board()
-        # print()
+            # g=iterat()
+            count=0
+            v,g=minimax(board,2)
+            print(count)
+        make_move(move_num % 2, transform(str(g)))
+        print_board()
         game_over = check_game(board)
 
 
@@ -215,19 +244,19 @@ def game_start():
     p2['num_games']+=1
 
 
-    if(best_reward<=p2['reward']):
-        best_reward=p2['reward']
-        best_weights=weight
-        noise_scale=max(noise_scale/2,1e-4)
-    else:
-        noise_scale=min(noise_scale*2,2)
+    # if(best_reward<=p2['reward']):
+    #     best_reward=p2['reward']
+    #     best_weights=weight
+    #     noise_scale=max(noise_scale/2,1e-4)
+    # else:
+    #     noise_scale=min(noise_scale*2,2)
 
 
 p1={'num_games':0,'wins':0,'draws':0,'reward':0,'total_reward':0,'strategy':'random'}
-p2={'num_games':0,'wins':0,'draws':0,'reward':0,'total_reward':0,'strategy':'random_search'}
+p2={'num_games':0,'wins':0,'draws':0,'reward':0,'total_reward':0,'strategy':'minimax'}
 p2_rew=[]
 noise_scale=0.01
-while(p1['num_games']<1000):
+while(p1['num_games']<30):
     board = [[0, 0, 0],
              [0, 0, 0],
              [0, 0, 0]]
